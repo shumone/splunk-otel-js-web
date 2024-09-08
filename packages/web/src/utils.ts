@@ -168,3 +168,114 @@ export function waitForGlobal(identifier: string, callback: (value: unknown) => 
     }
   };
 }
+
+// See link below for regex patterns
+// https://github.com/getsentry/sentry-javascript/blob/e6861cfd08addb1bd1b661067af539fec9e699f9/packages/browser/src/stack-parsers.ts#L53
+
+// Useful link for captured error examples:
+// https://github.com/csnover/TraceKit/blob/master/spec/fixtures/captured-errors.js
+
+// This regex matches frames that have no function name (ie. are at the top level of a module).
+// For example "at http://localhost:5000//script.js:1:126"
+// Frames _with_ function names usually look as follows: "at commitLayoutEffects (react-dom.development.js:23426:1)"
+const chromeRegexNoFnName = /^\s*at (\S+?)(?::(\d+))(?::(\d+))\s*$/i;
+
+// This regex matches all the frames that have a function name.
+const chromeRegex =
+    /^\s*at (?:(.+?\)(?: \[.+\])?|.*?) ?\((?:address at )?)?(?:async )?((?:<anonymous>|[-a-z]+:|.*bundle|\/)?.*?)(?::(\d+))?(?::(\d+))?\)?\s*$/i;
+
+// This regex is for the eval case in the filepath. It ignores the eval portion and gets only the filepath/etc.
+// Example:  (eval at <anonymous> (http://domain.com/script.js:1:11764)
+const chromeEvalRegex = /\((\S*)(?::(\d+))(?::(\d+))\)/;
+
+
+// Returns the filepath of a string, given 1 line out of a stackframe.
+export function chromeStackParserFn(line: string) {
+  // This regex has 3 potential matching groups to it, first one is full match
+  const noFnParts = chromeRegexNoFnName.exec(line)
+  if (noFnParts) {
+    // Retrieve full match, 3 matching groups?
+    // Only really care about url/filepath though for our project
+    // 0: full, 1: filepath, 2: line, 3: col
+    // Note: filepath seems pretty generic; though it should be fine?
+    const noFnFilepath = noFnParts[1]
+    return noFnFilepath;
+  }
+
+  // parts should be:
+  // 0: full, 1: function name, 2: filename (is it full url?), 3: line, 4: col
+  // 1: captures the function name/method, also any debug info like [native code], anon fns. Address at/async are non-capturing
+  // 2: Filepath/filename; can check for anon, file protocols, bundles, unix paths
+  // 3/4: line/col optional
+  const parts = chromeRegex.exec(line)
+  if (parts) {
+    // Check eval in the stackframe if it exists
+    //
+    const isEval = parts[2] && parts[2].indexOf('eval') === 0; // start of line
+    if (isEval) {
+      // This regex further splits up the "eval" filepath into 4 parts
+      // 0: full, 1: filepath/url, 2: line, 3: col
+      const subMatch = chromeEvalRegex.exec(parts[2])
+      if (subMatch) {
+        parts[2] = subMatch[1];
+      }
+    }
+    return parts[2]
+  }
+}
+
+
+// Regex for gecko based browsers (mostly firefox). Goes line by line.
+// 0: full, 1: function, (1a: noncapturing group for parameters in function), (1b: noncapturing for beginning of line or @?)
+// 2: filepath (protocol, [native code] check, bundle/.js file check up to an @, unix file path check
+// 3: line, 4: col,
+const geckoRegex =
+    /^\s*(.*?)(?:\((.*?)\))?(?:^|@)?((?:[-a-z]+)?:\/.*?|\[native code\]|[^@]*(?:bundle|\d+\.js)|\/[\w\-. /=]+)(?::(\d+))?(?::(\d+))?\s*$/i;
+
+// Regex for eval portion in filepath?
+// 0: full, 1: filepath, 2: linenumber
+// https://example.com/app.js line 100 > eval -> https://example.com/app.js and 100
+const geckoEvalRegex = /(\S+) line (\d+)(?: > eval line \d+)* > eval/i;
+
+export function geckoStackParserFn(line: string) {
+  const parts = geckoRegex.exec(line)
+
+  if (parts) {
+    const isEval = parts[3] && parts[3].indexOf(' > eval') > -1
+    if (isEval) {
+      // See example of geckEvalRegex; its formatted weirdly with the < eval part at the end. In anycase, we only care about the
+      // first capturing group
+      const subMatch = geckoEvalRegex.exec(parts[3])
+
+      if (subMatch) {
+        parts[3] = subMatch[1]
+      }
+    }
+  }
+  return parts[3]
+}
+
+// Skipping opera 10/11 and below; old browsers from 2009
+// Opera 15+ uses chromium v8; assume chrome regex works for that
+
+// best practices for stack trace parsing:
+// https://github.com/getsentry/sentry-javascript/blob/a8e5f593b3341f90cf9aafaaa1f6eb1e0da7545e/packages/utils/src/stacktrace.ts
+
+// Other browsers: Safari (newer versions copy chrome style stack traces?), but w/ an exception for web-extensions???
+// Need logic for deducing browser type to match w/ proper regex filter
+
+// User Agent data (and getHighEntropyValues)
+// Naive (?) approach using user agent data? Or feature detection? Tracekit just tests all regex filters 1 by 1 (until something matches the filter?)
+
+export function computeStackTrace() {
+
+}
+
+
+
+
+
+
+
+
+

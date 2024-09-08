@@ -66,6 +66,11 @@
     Use this button to tigger a span for connecting to a websockets server.
   </p>
 
+  <p>
+    <button id="errorBtn" type="button">Generate generic error</button>
+    Use this button to trigger a span related to error events.
+  </p>
+
   <script>
     document.getElementById("route").addEventListener('click', function() {
       history.pushState({}, 'title', '/thisIsArtificiallySet');
@@ -81,6 +86,9 @@
     regularFetchBtn.onclick = () => {
       fetch('/some-data').then(response => response.json()).then(console.log);
     };
+    errorBtn.onclick = () => {
+      throw new Error("Testing some errors that happened");
+    }
 
     let socket;
     document.getElementById('connectWebsocketsBtn').addEventListener('click', () => {

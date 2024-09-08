@@ -16,7 +16,7 @@ limitations under the License.
 
 import * as shimmer from 'shimmer';
 import { getElementXPath } from '@opentelemetry/sdk-trace-web';
-import { limitLen } from './utils';
+import { limitLen, geckoStackParserFn, chromeStackParserFn } from './utils';
 import { Span } from '@opentelemetry/api';
 import { InstrumentationBase, InstrumentationConfig } from '@opentelemetry/instrumentation';
 
@@ -41,6 +41,15 @@ function addStackIfUseful(span: Span, err: Error) {
   if (err && err.stack && useful(err.stack)) {
     span.setAttribute('error.stack', limitLen(err.stack.toString(), STACK_LIMIT));
   }
+}
+
+function parseStackTrace(err: Error) {
+  const stacktrace = err.stack || ''
+  const stackFrames = stacktrace.split('\n')
+  const parsedFrames = stackFrames
+      .map(frame=> frame.trim())
+      .filter(frame => frame.length > 0)
+  return parsedFrames
 }
 
 export const ERROR_INSTRUMENTATION_NAME = 'errors';
@@ -99,6 +108,21 @@ export class SplunkErrorInstrumentation extends InstrumentationBase {
     span.setAttribute('error.object', useful(err.name) ? err.name : err.constructor && err.constructor.name ? err.constructor.name : 'Error');
     span.setAttribute('error.message', limitLen(msg, MESSAGE_LIMIT));
     addStackIfUseful(span, err);
+
+
+    // Test error span stack trace parsing
+    const stackFrames = parseStackTrace(err)
+    const filepaths: string[] = []
+    // Do a test run for picking proper regex?
+    // Ah, the problem with this approach is that the regex reads the lines sequentially; also, the first line of the stack
+    // typically is not needed for retrieving filepaths (its usually the error type/other info).
+    // Need to know when to ignore first line, and pick correct regex.
+    stackFrames.forEach((value, index) => {
+      // We want to use the regex filters from chrome then firefox (then any others I decide to add)
+
+      filepaths.push(chromeStackParserFn(value))
+    })
+    span.setAttribute('error.filepaths', filepaths)
     span.end(now);
   }
 
