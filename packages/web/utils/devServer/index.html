@@ -23,6 +23,7 @@
   content="default-src 'self'; script-src 'self' 'unsafe-inline'; connect-src 'self' rum-ingest.lab0.signalfx.com" />
 
   <script src="/dist/artifacts/splunk-otel-web.js"></script>
+  <script src="/utils/devServer/assets/browserTest.js"></script>
   <script>
     window.SplunkRum && window.SplunkRum.init({
       beaconEndpoint: '/api/v2/spans',
@@ -70,6 +71,10 @@
     <button id="errorBtn" type="button">Generate generic error</button>
     Use this button to trigger a span related to error events.
   </p>
+  <p>
+    <button id="runTest" type="button">Check console log for test results</button>
+    Use this button to run tests regarding stack traces
+  </p>
 
   <script>
     document.getElementById("route").addEventListener('click', function() {
@@ -88,7 +93,10 @@
     };
     errorBtn.onclick = () => {
       throw new Error("Testing some errors that happened");
-    }
+    };
+    runTest.onclick = () => {
+      runTests();
+    };
 
     let socket;
     document.getElementById('connectWebsocketsBtn').addEventListener('click', () => {

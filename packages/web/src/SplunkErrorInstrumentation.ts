@@ -120,6 +120,7 @@ export class SplunkErrorInstrumentation extends InstrumentationBase {
     stackFrames.forEach((value, index) => {
       // We want to use the regex filters from chrome then firefox (then any others I decide to add)
 
+      // ignore the first one if it doesn't work/disregard if parserFn returns undefined
       filepaths.push(chromeStackParserFn(value))
     })
     span.setAttribute('error.filepaths', filepaths)

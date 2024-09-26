@@ -188,6 +188,11 @@ const chromeRegex =
 // Example:  (eval at <anonymous> (http://domain.com/script.js:1:11764)
 const chromeEvalRegex = /\((\S*)(?::(\d+))(?::(\d+))\)/;
 
+// If we only care about grabbing the filepath/filename, can we simplify the above regexes? Or does that decrease the performance (as it has to search the entire string versus line by line)
+
+// Scenarios for filepath/filenames:
+//
+
 
 // Returns the filepath of a string, given 1 line out of a stackframe.
 export function chromeStackParserFn(line: string) {
