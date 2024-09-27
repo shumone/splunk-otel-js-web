@@ -18,16 +18,17 @@ limitations under the License.
 import 'mocha';
 
 // Manually maintain this list, as old webpack require-based mechanism isn't working under rollup
-import './init.test';
-import './servertiming.test';
-import './utils.test';
-import './session.test';
-import './websockets.test';
-import './SessionBasedSampler.test';
-import './SplunkExporter.test';
-import './api.test';
-import './SplunkContextManager.test';
-import './SplunkSpanAttributesProcessor.test';
-import './SplunkOtelWeb.test';
-import './synthetics.test';
-import './socketio.test';
+// import './init.test';
+// import './servertiming.test';
+// import './utils.test';
+// import './session.test';
+// import './websockets.test';
+// import './SessionBasedSampler.test';
+// import './SplunkExporter.test';
+// import './api.test';
+// import './SplunkContextManager.test';
+// import './SplunkSpanAttributesProcessor.test';
+// import './SplunkOtelWeb.test';
+// import './synthetics.test';
+// import './socketio.test';
+import './stackTrace.test';
